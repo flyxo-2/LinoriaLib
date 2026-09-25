@@ -3534,6 +3534,26 @@ do
                 BorderColor3 = "OutlineColor";
             })
 
+            local HoverStroke = Library:Create("UIStroke", {
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+                Color = Library.AccentColor;
+                Thickness = 1;
+                Transparency = 1;
+                Parent = Inner;
+            })
+            Library:AddToRegistry(HoverStroke, { Color = "AccentColor"; })
+            local function SetButtonGlow(Transparency)
+                TweenService:Create(HoverStroke, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Transparency = Transparency;
+                }):Play()
+            end
+            Outer.MouseEnter:Connect(function()
+                if not Button.Disabled then SetButtonGlow(0.3) end
+            end)
+            Outer.MouseLeave:Connect(function()
+                SetButtonGlow(1)
+            end)
+
             Library:OnHighlight(Outer, Outer,
                 { BorderColor3 = "AccentColor" },
                 { BorderColor3 = "Black" }
@@ -3606,6 +3626,13 @@ do
                     return
                 end
 
+                local ClickGlow = Button.Inner:FindFirstChildOfClass("UIStroke")
+                if ClickGlow then
+                    ClickGlow.Transparency = 0
+                    TweenService:Create(ClickGlow, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Transparency = 1;
+                    }):Play()
+                end
                 Library:SafeCallback(Button.Func)
             end)
         end
@@ -4038,6 +4065,15 @@ do
             BorderColor3 = "OutlineColor";
         })
 
+        local TogglePulse = Library:Create("UIStroke", {
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+            Color = Library.AccentColor;
+            Thickness = 1.5;
+            Transparency = 1;
+            Parent = ToggleOuter;
+        })
+        Library:AddToRegistry(TogglePulse, { Color = "AccentColor"; })
+
         local ToggleLabel = Library:CreateLabel({
             Size = UDim2.new(1, -19, 0, 11); -- size of toggle box (13) + size offset of previous layout (6)
             Position = UDim2.new(0, 19, 0, 0);
@@ -4130,8 +4166,15 @@ do
 
             Bool = (not not Bool)
 
+            local Changed = Toggle.Value ~= Bool
             Toggle.Value = Bool
             Toggle:Display()
+            if Changed then
+                TogglePulse.Transparency = 0.12
+                TweenService:Create(TogglePulse, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Transparency = 1;
+                }):Play()
+            end
 
             for _, Addon in next, Toggle.Addons do
                 if Addon.Type == "KeyPicker" and Addon.SyncToggleState then
@@ -6570,6 +6613,20 @@ function Library:CreateWindow(...)
         Name = "Window";
     })
     LibraryMainOuterFrame = Outer
+
+    -- A soft accent outline stays attached to the window and follows theme changes.
+    local WindowGlow = Library:Create("UIStroke", {
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+        Color = Library.AccentColor;
+        Thickness = 2;
+        Transparency = 0.55;
+        Parent = Outer;
+    })
+    Library:AddToRegistry(WindowGlow, { Color = "AccentColor"; })
+    TweenService:Create(WindowGlow, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+        Transparency = 0.82;
+    }):Play()
+
     Library:MakeDraggable(Outer, 25, true)
     if WindowInfo.Resizable then Library:MakeResizable(Outer, Library.MinSize) end
 
@@ -6596,6 +6653,29 @@ function Library:CreateWindow(...)
         ZIndex = 1;
         Parent = Inner;
     })
+
+    -- Small animated highlight under the title; it never captures input.
+    local TitleAccent = Library:Create("Frame", {
+        BackgroundColor3 = Library.AccentColor;
+        BorderSizePixel = 0;
+        Position = UDim2.new(0, 8, 0, 23);
+        Size = UDim2.new(1, -16, 0, 2);
+        ZIndex = 2;
+        Parent = Inner;
+    })
+    Library:AddToRegistry(TitleAccent, { BackgroundColor3 = "AccentColor"; })
+    local TitleSheen = Library:Create("UIGradient", {
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.9),
+            NumberSequenceKeypoint.new(0.5, 0),
+            NumberSequenceKeypoint.new(1, 0.9),
+        });
+        Offset = Vector2.new(-1, 0);
+        Parent = TitleAccent;
+    })
+    TweenService:Create(TitleSheen, TweenInfo.new(2.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+        Offset = Vector2.new(1, 0);
+    }):Play()
 
     local MainSectionOuter = Library:Create("Frame", {
         BackgroundColor3 = Library.BackgroundColor;
@@ -7243,6 +7323,31 @@ function Library:CreateWindow(...)
             BorderColor3 = "OutlineColor";
         })
 
+        local TabAccent = Library:Create("Frame", {
+            BackgroundColor3 = Library.AccentColor;
+            BackgroundTransparency = 1;
+            BorderSizePixel = 0;
+            Position = UDim2.new(0, 2, 1, -2);
+            Size = UDim2.new(1, -4, 0, 2);
+            ZIndex = 2;
+            Parent = TabButton;
+        })
+        Library:AddToRegistry(TabAccent, { BackgroundColor3 = "AccentColor"; })
+        local TabHovered = false
+        local function UpdateTabAccent()
+            TweenService:Create(TabAccent, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundTransparency = (Library.ActiveTab == Name) and 0 or (TabHovered and 0.6 or 1);
+            }):Play()
+        end
+        TabButton.MouseEnter:Connect(function()
+            TabHovered = true
+            UpdateTabAccent()
+        end)
+        TabButton.MouseLeave:Connect(function()
+            TabHovered = false
+            UpdateTabAccent()
+        end)
+
         local TabButtonLabel = Library:CreateLabel({
             Position = UDim2.new(0, 0, 0, 0);
             Size = UDim2.new(1, 0, 1, -1);
@@ -7527,6 +7632,7 @@ end
             TabButton.BackgroundColor3 = Library.MainColor
             Library.RegistryMap[TabButton].Properties.BackgroundColor3 = "MainColor"
             TabFrame.Visible = true
+            UpdateTabAccent()
 
             Tab:Resize()
         end
@@ -7537,6 +7643,7 @@ end
             TabButton.BackgroundColor3 = Library.BackgroundColor
             Library.RegistryMap[TabButton].Properties.BackgroundColor3 = "BackgroundColor"
             TabFrame.Visible = false
+            UpdateTabAccent()
         end
         Tab.Hide = Tab.HideTab
 
